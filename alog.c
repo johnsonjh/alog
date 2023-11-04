@@ -14,18 +14,18 @@
  *   disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
  */
 
-/** alog - Control for a log file               	*/
+/** alog - Control for a log file                       */
 
 #define _ILS_MACROS
 
-#include	"alog.h"
-#include	<sys/types.h>
-#include	<sys/statfs.h>
-#include	<unistd.h>
-#include	<string.h>
-#include  	<ctype.h>
+#include        "alog.h"
+#include        <sys/types.h>
+#include        <sys/statfs.h>
+#include        <unistd.h>
+#include        <string.h>
+#include        <ctype.h>
 
-int result=0;	/* holds global exit value */
+int result=0;   /* holds global exit value */
 char c_flag = FALSE;  /* flag for SMIT processing */
 
 int main(int argc,char* argv[])
@@ -35,53 +35,53 @@ int main(int argc,char* argv[])
 /*********************************************************************/
 /*********************************************************************/
 
-FILE	*fout,*fcon,/**ftmp*/*fnullptr;    /* File pointer          */
+FILE    *fout,*fcon,/**ftmp*/*fnullptr;    /* File pointer          */
 struct  statfs statbuf;
-char	*fnull;		        /* Pointer to /dev/null name     */
+char    *fnull;                 /* Pointer to /dev/null name     */
 
-int	i,j/*,rc*/;				/* Temp vars		*/
-//int 	fputc_rc = 0;
-int	op;				/* option return from getopt */
-int 	verbose_valid;			/* true if verbosity is 0-9 */
-int 	free_bytes;			/* free bytes in filesystem */
+int     i,j/*,rc*/;                             /* Temp vars            */
+//int   fputc_rc = 0;
+int     op;                             /* option return from getopt */
+int     verbose_valid;                  /* true if verbosity is 0-9 */
+int     free_bytes;                     /* free bytes in filesystem */
 extern  char *optarg;
 extern  int  opterr;
 extern  int  errno;
 
-/**************** Default Values/Definitions	*/
+/**************** Default Values/Definitions    */
 
-char	*log_file_name;		/* Pointer to Log file name	*/
-char	*log_file_type;		/* Pointer to Log file type	*/
-char	*log_verbose;		/* Pointer to verbosity level   */
-char	*chg_verb;		/* Pointer to new verbosity level   */
-int	log_size;		/* Current size of log		*/
-int	log_shrink = 0;		/* We are shrinking the log size */
+char    *log_file_name;         /* Pointer to Log file name     */
+char    *log_file_type;         /* Pointer to Log file type     */
+char    *log_verbose;           /* Pointer to verbosity level   */
+char    *chg_verb;              /* Pointer to new verbosity level   */
+int     log_size;               /* Current size of log          */
+int     log_shrink = 0;         /* We are shrinking the log size */
 
-/***************** Buffers & storage ptrs	*/
-char	tname[128];		/* Temp file name for shrink	*/
-char	t_type[128];		/* Hold optarg log type         */
-char	t_verb[128];		/* Hold optarg log verbosity    */
-char	log_size_arg[128];	/* Hold optarg log size	        */
-char	cmd[256];		/* Used to build command        */
-char	inbuf[BUFSIZ];		/* Input buffer			*/
+/***************** Buffers & storage ptrs       */
+char    tname[128];             /* Temp file name for shrink    */
+char    t_type[128];            /* Hold optarg log type         */
+char    t_verb[128];            /* Hold optarg log verbosity    */
+char    log_size_arg[128];      /* Hold optarg log size         */
+char    cmd[256];               /* Used to build command        */
+char    inbuf[BUFSIZ];          /* Input buffer                 */
 
-/**************** Flags & control vars		*/
-char	C_flag = FALSE;	        /* Change attribute flag	*/
-char	f_flag = FALSE;	        /* File name flag	        */
-char	L_flag = FALSE;	        /* List attributes flag	        */
-char	o_flag = FALSE;	        /* Output log flag		*/
-char	q_flag = FALSE;		/* Quiet logging flag           */
-char	s_flag = FALSE;	        /* Change size flag		*/
-char	t_flag = FALSE;	        /* Type flag		        */
-char	V_flag = FALSE;	        /* Return verbosity value	*/
-char	w_flag = FALSE;	        /* Change verbosity flag	*/
-char	valid_type = FALSE;	/* Valid Type indicator		*/
-char	state = FALSE;		/* logging state control	*/
+/**************** Flags & control vars          */
+char    C_flag = FALSE;         /* Change attribute flag        */
+char    f_flag = FALSE;         /* File name flag               */
+char    L_flag = FALSE;         /* List attributes flag         */
+char    o_flag = FALSE;         /* Output log flag              */
+char    q_flag = FALSE;         /* Quiet logging flag           */
+char    s_flag = FALSE;         /* Change size flag             */
+char    t_flag = FALSE;         /* Type flag                    */
+char    V_flag = FALSE;         /* Return verbosity value       */
+char    w_flag = FALSE;         /* Change verbosity flag        */
+char    valid_type = FALSE;     /* Valid Type indicator         */
+char    state = FALSE;          /* logging state control        */
 
-struct bl_head lp;		/* Setup control structure	*/
-int	bytes_inbuf;		/* bytes in from buffer		*/
-//int	found=0;		/* Number of items found in ODM */
-int	systemrc=0;
+struct bl_head lp;              /* Setup control structure      */
+int     bytes_inbuf;            /* bytes in from buffer         */
+//int   found=0;                /* Number of items found in ODM */
+int     systemrc=0;
 //uid_t   userid;
 
 /*********************************************************************/
@@ -90,7 +90,7 @@ int	systemrc=0;
 
 (void) setlocale (LC_ALL, "");      /* get locale env values */
 
-/* Set all control vals to zero	*/
+/* Set all control vals to zero */
 log_size = 0;
 log_file_name = NULL;
 log_file_type = NULL;
@@ -99,7 +99,7 @@ chg_verb = NULL;
 verbose_valid = FALSE;
 opterr = 0;
 
-/* Get command line options	*/
+/* Get command line options     */
 while ((op = getopt(argc,argv,"Cf:Loqcs:t:Vw:-H")) != EOF)
    {
    /* see if a "-" char is in the optarg variable */
@@ -111,8 +111,8 @@ while ((op = getopt(argc,argv,"Cf:Loqcs:t:Vw:-H")) != EOF)
    switch (op)
       {
       case 'c' :
-	 c_flag = TRUE;
-	 break;
+         c_flag = TRUE;
+         break;
 
       case 'C' :                   /* user specified change flag */
          C_flag = TRUE;
@@ -138,12 +138,12 @@ while ((op = getopt(argc,argv,"Cf:Loqcs:t:Vw:-H")) != EOF)
 
       case 's' :                   /* user specified log size */
          strcpy(log_size_arg,optarg);
-	 for (i = 0; log_size_arg[i]; i++)
-		if (isalpha(log_size_arg[i]))
-			{
-			strcpy(log_size_arg,"0");
-			break;
-			}
+         for (i = 0; log_size_arg[i]; i++)
+                if (isalpha(log_size_arg[i]))
+                        {
+                        strcpy(log_size_arg,"0");
+                        break;
+                        }
          if ((log_size = atoi(log_size_arg)) <= 0)
             set_result(1);              /* invalid size specified */
          else
@@ -163,16 +163,16 @@ while ((op = getopt(argc,argv,"Cf:Loqcs:t:Vw:-H")) != EOF)
       case 'w' :                   /* user specified verbosity */
          w_flag = TRUE;
          strcpy(t_verb,optarg);
-	 if (isdigit(t_verb[0]) && !(t_verb[1]) && (strcmp(t_verb,"00") != 0))
-		chg_verb = t_verb;
+         if (isdigit(t_verb[0]) && !(t_verb[1]) && (strcmp(t_verb,"00") != 0))
+                chg_verb = t_verb;
          break;
 
       case '?' :                   /* put syntax/usage msg */
-	 set_result(1);
+         set_result(1);
          break;
 
-      case 'H' :		/* help */
-	 syntax();
+      case 'H' :                /* help */
+         syntax();
          break;
 
       default:                     /* set syntax return code */
@@ -259,16 +259,16 @@ of flags.\n");
 
 /* Make sure that the verbosity is a value 0 through 9. */
 if ((w_flag) && (chg_verb == NULL))
-	{
-	set_result(1);
-	fprintf(stderr,"alog: The verbosity \
+        {
+        set_result(1);
+        fprintf(stderr,"alog: The verbosity \
 '%s' is not a valid verbosity value.\n\
 The verbosity value must be within the range 0 to 9.\n", t_verb);
-	syntax();
-	}
+        syntax();
+        }
 
 /* Check for type and change/retrieve info from ODM database if needed */
-if(log_file_type != NULL)	/* user specified log type */
+if(log_file_type != NULL)       /* user specified log type */
    {
    /*
     *-------------------------------------------------------
@@ -294,7 +294,7 @@ if(log_file_type != NULL)	/* user specified log type */
     */
 
    valid_type = 0; /* validate_type(log_file_type); */
-   if (valid_type)	       /* user specified a valid log type */
+   if (valid_type)             /* user specified a valid log type */
       {
       if (C_flag)         /* user wants to change attributes */
          /* User must be root to change attributes. */
@@ -342,29 +342,29 @@ if(log_file_type != NULL)	/* user specified log type */
          //log_file_name = get_dbitem(log_file_type,"_logname");
 
       if((!s_flag) && (!f_flag))          /* user did not specify log size */
-	 {
-         //strcpy(log_size_arg,get_dbitem(log_file_type,"_logsize"));
-	 for (i = 0; log_size_arg[i]; i++)
-		  if (isalpha(log_size_arg[i]))
-		  {
-		  strcpy(log_size_arg,"0");
-		  result = 3;
-		  break;
-		  }
-	 log_size = atoi(log_size_arg);
-	 }
-
-      if (!f_flag)	/* get verbosity from ODM */
          {
-      	 //log_verbose = get_dbitem(log_file_type,"_logverb");
-	 if (isdigit(log_verbose[0]) && !(log_verbose[1]))
-		verbose_valid = TRUE;
-      	 if (!verbose_valid)
-		{
-		log_verbose = NULL;
-		result = 3;
-		}
-	 }
+         //strcpy(log_size_arg,get_dbitem(log_file_type,"_logsize"));
+         for (i = 0; log_size_arg[i]; i++)
+                  if (isalpha(log_size_arg[i]))
+                  {
+                  strcpy(log_size_arg,"0");
+                  result = 3;
+                  break;
+                  }
+         log_size = atoi(log_size_arg);
+         }
+
+      if (!f_flag)      /* get verbosity from ODM */
+         {
+         //log_verbose = get_dbitem(log_file_type,"_logverb");
+         if (isdigit(log_verbose[0]) && !(log_verbose[1]))
+                verbose_valid = TRUE;
+         if (!verbose_valid)
+                {
+                log_verbose = NULL;
+                result = 3;
+                }
+         }
       }  /* end if */
 
    else  /* the log type is invalid */
@@ -380,9 +380,9 @@ type.\n",log_file_type);
    }  /* end if */
 
 /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=**=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
-	VALIDATE - Make all fields have an appropriate value
-		   Set values in case of failure to insure that
-		   alog always runs to completion.
+        VALIDATE - Make all fields have an appropriate value
+                   Set values in case of failure to insure that
+                   alog always runs to completion.
  *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=**=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
 fnull="/dev/null";                /* set /dev/null filename var */
 fnullptr = fopen(fnull,"a");      /* set pointer to fnull */
@@ -427,7 +427,7 @@ if(L_flag)
    exit(result);
    }
 
-/* Check to see if verbose level display mode is selected  	*/
+/* Check to see if verbose level display mode is selected       */
 /* Only return verbosity level to stdout if a valid_type is entered */
 /* and there were no syntax errors. */
 if((V_flag) && (!f_flag))
@@ -438,7 +438,7 @@ if((V_flag) && (!f_flag))
       exit(0);             /* print valid type and exit */
       }
    else
-   	exit(2);           /* the type was not valid so exit */
+        exit(2);           /* the type was not valid so exit */
    }
 
 
@@ -454,7 +454,7 @@ state = log_verbose[0] == '0'?FALSE:TRUE;
 if(!state)
    log_file_name = fnull;         /* set log name to /dev/null */
 
-/* Setup file pointers		*/
+/* Setup file pointers          */
 
 /* If the quiet logging flag was specified ... */
 /* try to open /dev/null to use as the "console" */
@@ -469,10 +469,10 @@ else   /* normal logging, so assign stdout to fcon, the "console" */
    fcon = stdout;
 
 
-/* Open the log file	*/
+/* Open the log file    */
 if((fout = fopen(log_file_name,"r+")) != NULL)
    {
-   /* Read header from file	*/
+   /* Read header from file     */
    if(state)
       {
       fread(&lp,sizeof(struct bl_head),1,fout);
@@ -487,25 +487,25 @@ if((fout = fopen(log_file_name,"r+")) != NULL)
          lp.top = 0;
          lp.current = 0;
          lp.bottom = 0;
-         lp.size = 4096;	/* Let's not do wrap too often    */
+         lp.size = 4096;        /* Let's not do wrap too often    */
          set_result(2);            /* return error because file was */
                                 /* not an alog file */
          }
       }
-   else				/* Going to write to null fake it */
+   else                         /* Going to write to null fake it */
       {
       lp.magic = ALOG_MAGIC;
       lp.top = 0;
       lp.current = 0;
       lp.bottom = 0;
-      lp.size = 4096;		/* Let's not do wrap too often    */
-      }  /* end else */		/* to /dev/null.  This is so we   */
+      lp.size = 4096;           /* Let's not do wrap too often    */
+      }  /* end else */         /* to /dev/null.  This is so we   */
                                 /* we don't enter the wrap logic  */
                                 /* too often.                     */
    }  /* end if */
 else
    {
-   if(state)			/* Create a new file if not exist */
+   if(state)                    /* Create a new file if not exist */
       { /* set up the header */
       lp.magic = ALOG_MAGIC;    /* Create the magic number */
       lp.top = sizeof(struct bl_head);  /* point to 1st char */
@@ -527,14 +527,14 @@ else
        */
       log_size = ((j/DEF_SIZE) + ((j%DEF_SIZE != 0)*1))*DEF_SIZE;
       if (statfs(log_file_name, &statbuf) == 0)
-		{
-		free_bytes = (((statbuf.f_bfree * 4) * 1000));
-	 	if ((log_size > free_bytes) && (free_bytes > DEF_SIZE))
-			{
-			log_size = DEF_SIZE;
-			set_result(2);
-			}
-		}
+                {
+                free_bytes = (((statbuf.f_bfree * 4) * 1000));
+                if ((log_size > free_bytes) && (free_bytes > DEF_SIZE))
+                        {
+                        log_size = DEF_SIZE;
+                        set_result(2);
+                        }
+                }
       lp.size = log_size;
 
       /* Initialize the header and fill the log with zeroes */
@@ -542,10 +542,10 @@ else
       fwrite(&lp,sizeof(struct bl_head),1,fout);
       fseek(fout,lp.top,0);
       for(i=0;i<(lp.size-sizeof(struct bl_head));i++)  /* Fill the log with zeros */
-	{
+        {
          /*fputc_rc =*/ fputc('0',fout);
-	}
-      s_flag = FALSE;	     /* Turn off s_flag flag */
+        }
+      s_flag = FALSE;        /* Turn off s_flag flag */
       }  /* end if */
    }  /* end else */
 /*
@@ -559,7 +559,7 @@ else
 if(state && s_flag)
    {
    fclose(fout);
-   if(lp.size < log_size)	/* Increase size of log		*/
+   if(lp.size < log_size)       /* Increase size of log         */
       {
       if((fout = fopen(log_file_name,"a")) == NULL)
          ;  /* Could not change size of log */
@@ -571,22 +571,22 @@ if(state && s_flag)
           */
          log_size = ((j/DEF_SIZE) + ((j%DEF_SIZE != 0)*1))*DEF_SIZE;
          if (statfs(log_file_name, &statbuf) == 0)
-		{
-		free_bytes = (((statbuf.f_bfree * 4) * 1000));
-	 	if ((log_size - lp.size) > free_bytes)
-			{
-			log_size = lp.size;
-			set_result(2);
-			}
-		}
+                {
+                free_bytes = (((statbuf.f_bfree * 4) * 1000));
+                if ((log_size - lp.size) > free_bytes)
+                        {
+                        log_size = lp.size;
+                        set_result(2);
+                        }
+                }
          j = log_size-lp.size;
-         /* Extend the log with zeros	*/
+         /* Extend the log with zeros   */
          for(i=0;i<j;i++)
             fputc(0,fout);
          lp.size = log_size;         /* put new size in log header */
          }  /* end else */
       }  /* end if */
-   if(lp.size > log_size)	/* Shrink the log file		*/
+   if(lp.size > log_size)       /* Shrink the log file          */
       {
       log_shrink = 1;
       j = log_size;
@@ -616,7 +616,7 @@ if(state && s_flag)
          set_result(2);
          }
       }  /* end if */
-   if (fout) fclose(fout);		/* Finished sizing lets get ready */
+   if (fout) fclose(fout);              /* Finished sizing lets get ready */
    if((fout = fopen(log_file_name,"r+")) == NULL)
       {
       /* Could not open (resized) log file, so log to /dev/null */
@@ -630,15 +630,15 @@ if(state && s_flag)
    /* If we are shrinking, the log pointers have already been */
    /* updated by the call to alog.  */
    if (!log_shrink)
-	{
-   	fseek(fout,0,0);
-   	fwrite(&lp,sizeof(struct bl_head),1,fout);
-	}
+        {
+        fseek(fout,0,0);
+        fwrite(&lp,sizeof(struct bl_head),1,fout);
+        }
    else
-	{
-	fseek(fout,0,0);
-	fread(&lp,sizeof(struct bl_head),1,fout);
-	}
+        {
+        fseek(fout,0,0);
+        fread(&lp,sizeof(struct bl_head),1,fout);
+        }
    }  /* end if */
 
 /*
@@ -654,14 +654,14 @@ if(state && s_flag)
 
 /* ignore the kill signal because we're starting to write to the log */
 signal(SIGINT, SIG_IGN);
-fseek(fout,lp.current,0);	/* Goto starting point in log    */
+fseek(fout,lp.current,0);       /* Goto starting point in log    */
 
 j=0;
 
-/* Get input from stdin	 */
+/* Get input from stdin  */
 while((bytes_inbuf = read(0,inbuf,BUFSIZ))>0)
    {
-   for(i=0;i<bytes_inbuf;i++)	/* Output to file(s)	 */
+   for(i=0;i<bytes_inbuf;i++)   /* Output to file(s)     */
       {
       /* check to see if it is time to start writing to the */
       /* top of the log again.                              */
@@ -669,17 +669,17 @@ while((bytes_inbuf = read(0,inbuf,BUFSIZ))>0)
          {
          putc(inbuf[i],fout);
          putc(inbuf[i],fcon);
-	 j++;
+         j++;
          lp.current++;
          }  /* end if */
       else  /* wrap logic active when we reach the size of the log */
          {
          if(state)          /* if we are logging to a file */
-         	fseek(fout,lp.top,0);  /* position pointer to top of log */
+                fseek(fout,lp.top,0);  /* position pointer to top of log */
          lp.current = lp.top;    /* position current to top of log */
          putc(inbuf[i],fout);
          putc(inbuf[i],fcon);
-	 j++;
+         j++;
          lp.current++;
          lp.bottom = lp.size; /* set bottom to size (end of log) */
          }  /* end else */
@@ -690,11 +690,11 @@ while((bytes_inbuf = read(0,inbuf,BUFSIZ))>0)
 if(lp.current > lp.bottom)     /* adjust bottom of log */
    lp.bottom = lp.current;
 
-/* Update the header		*/
+/* Update the header            */
 fseek(fout,0,0);
 /*j = */fwrite(&lp,sizeof(struct bl_head),1,fout);
 
-/* All done let's sync & close	*/
+/* All done let's sync & close  */
 fclose(fout);
 fclose(fcon);
 exit(result);          /* return value of previous problems */
@@ -702,13 +702,13 @@ exit(result);          /* return value of previous problems */
 
 /*
  * FUNCTION: This function sets the global result code if it's
- * 		not already set.
+ *              not already set.
  */
 
 void set_result(int new_result)
 {
-	if (result)
-		return;
-	result = new_result;
+        if (result)
+                return;
+        result = new_result;
 }
 

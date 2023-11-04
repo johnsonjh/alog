@@ -6,7 +6,7 @@
  *   COMPONENT_NAME: CMDALOG
  *
  *   FUNCTIONS: output_log
- *		syntax
+ *              syntax
  *
  *   ORIGINS: 27
  *
@@ -19,7 +19,7 @@
  */
 /* alog_util.c - This file contains support routines for the alog routine  */
 
-#include	"alog.h"
+#include        "alog.h"
 
 /*
  *-------------------------------------------------------
@@ -29,10 +29,10 @@
 
 void output_log(char *log_file_name)
 {
-int	i/*,j*/;
+int     i/*,j*/;
 //char    c;
 struct bl_head lp;
-FILE	*fin;
+FILE    *fin;
 
 if((fin = fopen(log_file_name,"r")) != NULL)
    {
@@ -43,7 +43,7 @@ if((fin = fopen(log_file_name,"r")) != NULL)
 an alog file.\n", log_file_name);
          exit(2); /* not an alog file */
       }
-   fseek(fin,lp.current,0);	/* Goto starting point in file    */
+   fseek(fin,lp.current,0);     /* Goto starting point in file    */
    }
 else
    { /* Could not open log file */
@@ -59,10 +59,10 @@ log_file_name);
 /* Output from current to bottom */
 /* If current and bottom are the same, don't print anything. */
 if (lp.current != lp.bottom)
-	for(i=lp.current;i<lp.bottom;i++)
-   		putchar(fgetc(fin));
+        for(i=lp.current;i<lp.bottom;i++)
+                putchar(fgetc(fin));
 
-/* Output from top to current	  */
+/* Output from top to current     */
 fseek(fin,lp.top,0);
 for(i=lp.top;i<lp.current;i++)
    putchar(fgetc(fin));

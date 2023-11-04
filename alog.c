@@ -602,12 +602,12 @@ if(state && s_flag)
        * create call to alog to change the size of the log using
        * the log name, temp file, and new log size
        */
-      sprintf(cmd,"/usr/bin/alog -f %s -o | alog -f %s -s %d -q",
+      sprintf(cmd,"alog -f %s -o | alog -f %s -s %d -q",
                   log_file_name,tname,log_size);
       system(cmd);
 
       /* Move the temporary file to the log name */
-      sprintf(cmd,"/usr/bin/mv %s %s\n", tname, log_file_name);
+      sprintf(cmd,"mv -f %s %s\n", tname, log_file_name);
       systemrc=system(cmd);
 
       if(systemrc != 0)   /* the original log will be used */
@@ -616,7 +616,7 @@ if(state && s_flag)
          set_result(2);
          }
       }  /* end if */
-   if (fout) fclose(fout);              /* Finished sizing lets get ready */
+   //XXX //if (fout) fclose(fout);              /* Finished sizing lets get ready */
    if((fout = fopen(log_file_name,"r+")) == NULL)
       {
       /* Could not open (resized) log file, so log to /dev/null */

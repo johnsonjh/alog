@@ -47,7 +47,6 @@ int     verbose_valid;                  /* true if verbosity is 0-9 */
 int     free_bytes;                     /* free bytes in filesystem */
 extern  char *optarg;
 extern  int  opterr;
-extern  int  errno;
 
 /**************** Default Values/Definitions    */
 

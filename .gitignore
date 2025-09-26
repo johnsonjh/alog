@@ -1,4 +1,7 @@
 *.alog
 alog
 a.out
+*.core
 core
+core-*
+*.o

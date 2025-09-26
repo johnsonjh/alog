@@ -47,6 +47,13 @@ struct  bl_head                /* log file header */
         int     bottom;        /* bottom of log */
         int     size;          /* size of log */
         };
+
 void syntax(void);
 void set_result(int new_result);
 void output_log(char *log_file_name);
+
+#include        "endian.h"
+
+void to_big_endian(struct bl_head *h);
+void to_host_endian(struct bl_head *h);
+

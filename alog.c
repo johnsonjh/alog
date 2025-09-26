@@ -18,6 +18,7 @@
 
 #define _ILS_MACROS
 
+#include        "endian.h"
 #include        "alog.h"
 #include        <sys/types.h>
 #include        <sys/statfs.h>
@@ -476,6 +477,7 @@ if((fout = fopen(log_file_name,"r+")) != NULL)
    if(state)
       {
       fread(&lp,sizeof(struct bl_head),1,fout);
+      to_host_endian(&lp);
       /* See if magic number is the right value */
       if (lp.magic != ALOG_MAGIC)
          {  /* the header is not correct */
@@ -539,7 +541,9 @@ else
 
       /* Initialize the header and fill the log with zeroes */
       fseek(fout,0,0);
+      to_big_endian(&lp);
       fwrite(&lp,sizeof(struct bl_head),1,fout);
+      to_host_endian(&lp);
       fseek(fout,lp.top,0);
       for(i=0;i<(lp.size-sizeof(struct bl_head));i++)  /* Fill the log with zeros */
         {
@@ -632,7 +636,9 @@ if(state && s_flag)
    if (!log_shrink)
         {
         fseek(fout,0,0);
+        to_big_endian(&lp);
         fwrite(&lp,sizeof(struct bl_head),1,fout);
+        to_host_endian(&lp);
         }
    else
         {
@@ -692,7 +698,9 @@ if(lp.current > lp.bottom)     /* adjust bottom of log */
 
 /* Update the header            */
 fseek(fout,0,0);
+/*j = */to_big_endian(&lp);
 /*j = */fwrite(&lp,sizeof(struct bl_head),1,fout);
+/*j = */to_host_endian(&lp);
 
 /* All done let's sync & close  */
 fclose(fout);

@@ -19,7 +19,28 @@
  */
 /* alog_util.c - This file contains support routines for the alog routine  */
 
+#include        "endian.h"
 #include        "alog.h"
+
+void to_big_endian(struct bl_head *h) {
+    if (is_little_endian()) {
+        h->magic = swap_uint32(h->magic);
+        h->top = swap_uint32(h->top);
+        h->current = swap_uint32(h->current);
+        h->bottom = swap_uint32(h->bottom);
+        h->size = swap_uint32(h->size);
+    }
+}
+
+void to_host_endian(struct bl_head *h) {
+    if (is_little_endian()) {
+        h->magic = swap_uint32(h->magic);
+        h->top = swap_uint32(h->top);
+        h->current = swap_uint32(h->current);
+        h->bottom = swap_uint32(h->bottom);
+        h->size = swap_uint32(h->size);
+    }
+}
 
 /*
  *-------------------------------------------------------
@@ -37,6 +58,7 @@ FILE    *fin;
 if((fin = fopen(log_file_name,"r")) != NULL)
    {
    fread(&lp,sizeof(struct bl_head),1,fin);
+   to_host_endian(&lp);
    if (lp.magic != ALOG_MAGIC)
       {  /* the header is not correct */
          fprintf(stderr,"alog: %s is not \

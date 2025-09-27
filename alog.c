@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/statfs.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -26,6 +25,18 @@
 
 #if HAS_INCLUDE(<getopt.h>)
 # include <getopt.h>
+#endif
+
+#if HAS_INCLUDE(<sys/statfs.h>)
+# include <sys/statfs.h>
+#endif
+
+#if HAS_INCLUDE(<sys/param.h>)
+# include <sys/param.h>
+#endif
+
+#if HAS_INCLUDE(<sys/mount.h>)
+# include <sys/mount.h>
 #endif
 
 #define DEF_SIZE 4096 /* log size Define */

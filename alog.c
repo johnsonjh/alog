@@ -27,7 +27,7 @@
 # include <getopt.h>
 #endif
 
-#if HAS_INCLUDE(<sys/statfs.h>)
+#if defined(_AIX) || HAS_INCLUDE(<sys/statfs.h>)
 # include <sys/statfs.h>
 #endif
 

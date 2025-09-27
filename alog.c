@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <locale.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,10 +16,6 @@
 #include <sys/statfs.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdbool.h>
-
-#define TRUE 1
-#define FALSE 0
 
 /*-------------------------------------
  * This define controls rounding of
@@ -219,15 +216,15 @@ main (int argc, char *argv[])
   char inbuf[BUFSIZ];     /* Input buffer */
 
   /**************** Flags & control vars */
-  char C_flag = FALSE;     /* Change attribute flag */
-  char f_flag = FALSE;     /* File name flag */
-  char L_flag = FALSE;     /* List attributes flag */
-  char o_flag = FALSE;     /* Output log flag */
-  char q_flag = FALSE;     /* Quiet logging flag */
-  char s_flag = FALSE;     /* Change size flag */
-  char t_flag = FALSE;     /* Type flag */
-  char V_flag = FALSE;     /* Return verbosity value*/
-  char w_flag = FALSE;     /* Change verbosity flag */
+  bool C_flag = false;    /* Change attribute flag */
+  bool f_flag = false;    /* File name flag */
+  bool L_flag = false;    /* List attributes flag */
+  bool o_flag = false;    /* Output log flag */
+  bool q_flag = false;    /* Quiet logging flag */
+  bool s_flag = false;    /* Change size flag */
+  bool t_flag = false;    /* Type flag */
+  bool V_flag = false;    /* Return verbosity value*/
+  bool w_flag = false;    /* Change verbosity flag */
 
   struct bl_head lp; /* Setup control structure */
   int bytes_inbuf;   /* bytes in from buffer */
@@ -252,11 +249,11 @@ main (int argc, char *argv[])
       switch (op)
         {
         case 'C': /* user specified change flag */
-          C_flag = TRUE;
+          C_flag = true;
           break;
 
         case 'f': /* user specified log name */
-          f_flag = TRUE;
+          f_flag = true;
           log_file_name = malloc (strlen (optarg) + 1);
           if (log_file_name == NULL)
             {
@@ -267,15 +264,15 @@ main (int argc, char *argv[])
           break;
 
         case 'L': /* user specified list flag */
-          L_flag = TRUE;
+          L_flag = true;
           break;
 
         case 'o': /* output log to screen */
-          o_flag = TRUE;
+          o_flag = true;
           break;
 
         case 'q': /* quiet logging - no cons output */
-          q_flag = TRUE;
+          q_flag = true;
           break;
 
         case 's': /* user specified log size */
@@ -322,23 +319,23 @@ main (int argc, char *argv[])
               }
             else
               {
-                s_flag = TRUE;
+                s_flag = true;
               }
           }
           break;
 
         case 't': /* user specified log type */
-          t_flag = TRUE;
+          t_flag = true;
           strcpy (t_type, optarg);
           log_file_type = t_type;
           break;
 
         case 'V': /* get verbosity level */
-          V_flag = TRUE;
+          V_flag = true;
           break;
 
         case 'w': /* user specified verbosity */
-          w_flag = TRUE;
+          w_flag = true;
           strcpy (t_verb, optarg);
           if (isdigit (t_verb[0]) && !(t_verb[1])
               && (strcmp (t_verb, "00") != 0))
@@ -595,7 +592,7 @@ Possible cause(s):\n\t\
         {
           fputc ('0', fout);
         }
-      s_flag = FALSE; /* Turn off s_flag flag */
+      s_flag = false; /* Turn off s_flag flag */
     } /* end else */
   /*
    *-------------------------------------------------------

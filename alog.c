@@ -83,7 +83,7 @@ to_big_endian (struct bl_head *h)
 static void
 syntax (int ret)
 {
-  fprintf (stderr, "Usage:\n\talog -f File [-o] | [ [-s Size] [-q] ]\n\talog -H\n");
+  fprintf (stderr, "Usage:\n\talog [ -f File [ -s Size ] ] [ -o ] [ -q ]\n\talog -H\n");
   exit (ret);
 } /* end syntax */
 

@@ -1,44 +1,22 @@
-/*
- * static char sccsid[] = "@(#)43        1.5  src/bos/usr/bin/alog/alog_util.c, cmdalog, bos411, 9428A410j 10/18/93 17:30:15";
- */
-
-/*
- *   COMPONENT_NAME: CMDALOG
- *
- *   FUNCTIONS: output_log
- *              syntax
- *
- *   ORIGINS: 27
- *
- *
- *   (C) COPYRIGHT International Business Machines Corp. 1993
- *   All Rights Reserved
- *   Licensed Materials - Property of IBM
- *   US Government Users Restricted Rights - Use, duplication or
- *   disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
- */
 /* alog_util.c - This file contains support routines for the alog routine  */
 
-#include        "endian.h"
-#include        "alog.h"
+#include <stdint.h>
+#include "alog.h"
+#include "endian.h"
 
-void to_big_endian(struct bl_head *h) {
-    if (is_little_endian()) {
-        h->magic = swap_uint32(h->magic);
-        h->top = swap_uint32(h->top);
-        h->current = swap_uint32(h->current);
-        h->bottom = swap_uint32(h->bottom);
-        h->size = swap_uint32(h->size);
-    }
-}
+int is_little_endian (void);
+uint32_t swap_uint32 (uint32_t val);
 
-void to_host_endian(struct bl_head *h) {
-    if (is_little_endian()) {
-        h->magic = swap_uint32(h->magic);
-        h->top = swap_uint32(h->top);
-        h->current = swap_uint32(h->current);
-        h->bottom = swap_uint32(h->bottom);
-        h->size = swap_uint32(h->size);
+void
+to_big_endian (struct bl_head *h)
+{
+  if (is_little_endian ())
+    {
+      h->magic = swap_uint32 (h->magic);
+      h->top = swap_uint32 (h->top);
+      h->current = swap_uint32 (h->current);
+      h->bottom = swap_uint32 (h->bottom);
+      h->size = swap_uint32 (h->size);
     }
 }
 
@@ -48,50 +26,82 @@ void to_host_endian(struct bl_head *h) {
  *-------------------------------------------------------
  */
 
-void output_log(char *log_file_name)
+void
+output_log (char *log_file_name)
 {
-int     i/*,j*/;
-//char    c;
-struct bl_head lp;
-FILE    *fin;
+  int i;
+  struct bl_head lp;
+  FILE *fin;
 
-if((fin = fopen(log_file_name,"r")) != NULL)
-   {
-   fread(&lp,sizeof(struct bl_head),1,fin);
-   to_host_endian(&lp);
-   if (lp.magic != ALOG_MAGIC)
-      {  /* the header is not correct */
-         fprintf(stderr,"alog: %s is not \
-an alog file.\n", log_file_name);
-         exit(2); /* not an alog file */
-      }
-   fseek(fin,lp.current,0);     /* Goto starting point in file    */
-   }
-else
-   { /* Could not open log file */
-   fprintf(stderr,"alog: Could not open \
-file, %s.\n\
-Possible cause(s):\n\t\
-- The file does not exist.\n\t\
-- The user does not have the proper authorities for the file.\n", \
-log_file_name);
-   exit(2);
-   }
+  if ((fin = fopen (log_file_name, "r")) != NULL)
+    {
+      if (fread (&lp, sizeof (struct bl_head), 1, fin) != 1)
+        {
+          fprintf (stderr, "alog: Error reading log file header from %s.\n",
+                   log_file_name);
+          exit (2);
+        }
+      to_big_endian (&lp);
+      if (lp.magic != ALOG_MAGIC)
+        {
+          fprintf (stderr, "alog: %s is not an alog file.\n", log_file_name);
+          exit (2);
+        }
+      if (fseek (fin, lp.current, 0) != 0)
+        {
+          fprintf (stderr, "alog: Error seeking in log file %s.\n",
+                   log_file_name);
+          exit (2);
+        }
+    }
+  else
+    {
+      fprintf (stderr, "alog: Could not open file, %s.\n", log_file_name);
+      exit (2);
+    }
 
-/* Output from current to bottom */
-/* If current and bottom are the same, don't print anything. */
-if (lp.current != lp.bottom)
-        for(i=lp.current;i<lp.bottom;i++)
-                putchar(fgetc(fin));
+  /* Output from current to bottom */
+  if (lp.current != lp.bottom)
+    {
+      for (i = lp.current; i < lp.bottom; i++)
+        {
+          int c = fgetc (fin);
+          if (c == EOF)
+            {
+              if (ferror (fin))
+                {
+                  fprintf (stderr, "alog: Error reading from log file %s.\n",
+                           log_file_name);
+                }
+              break;
+            }
+          putchar (c);
+        }
+    }
 
-/* Output from top to current     */
-fseek(fin,lp.top,0);
-for(i=lp.top;i<lp.current;i++)
-   putchar(fgetc(fin));
+  /* Output from top to current     */
+  if (fseek (fin, lp.top, 0) != 0)
+    {
+      fprintf (stderr, "alog: Error seeking in log file %s.\n", log_file_name);
+      exit (2);
+    }
+  for (i = lp.top; i < lp.current; i++)
+    {
+      int c = fgetc (fin);
+      if (c == EOF)
+        {
+          if (ferror (fin))
+            {
+              fprintf (stderr, "alog: Error reading from log file %s.\n",
+                       log_file_name);
+            }
+          break;
+        }
+      putchar (c);
+    }
 
-fclose(fin);
-
-}  /* end output_log */
+  fclose (fin);
+} /* end output_log */
 
 /*
  *-------------------------------------------------------
@@ -99,14 +109,15 @@ fclose(fin);
  *-------------------------------------------------------
  */
 
-void syntax(void)
+void
+syntax (void)
 {
-fprintf(stderr,"Usage:\n\t\
+  fprintf (stderr, "Usage:\n\t\
 alog -f File [-o] | [ [-s Size] [-q] ]\n\t\
 alog -t LogType [-f File] [-o] | [ [-s Size] [-q] ]\n\t\
 alog -t LogType -V\n\t\
 alog -C -t LogType { [-f File] [-s Size] [-w Verbosity] }\n\t\
 alog -L [-t LogType]\n\t\
 alog -H\n");
-exit(1);
-}  /* end syntax */
+  exit (1);
+} /* end syntax */

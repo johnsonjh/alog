@@ -81,10 +81,10 @@ to_big_endian (struct bl_head *h)
 }
 
 static void
-syntax (void)
+syntax (int ret)
 {
   fprintf (stderr, "Usage:\n\talog -f File [-o] | [ [-s Size] [-q] ]\n\talog -H\n");
-  exit (1);
+  exit (ret);
 } /* end syntax */
 
 static void
@@ -284,7 +284,7 @@ main (int argc, char *argv[])
           break;
 
         case 'H': /* help */
-          syntax ();
+          syntax (0);
           break;
 
         default:          /* set syntax return code */
@@ -299,7 +299,7 @@ main (int argc, char *argv[])
   /* handled above) so that when alog is being used as a pipe, alog won't */
   /* interupt the operation of the command that is calling it. */
   if (result == 1)
-    syntax ();
+    syntax (1);
 
   /* VALIDATE - Make all fields have an appropriate value set values in */
   /* case of failure to insure that alog always runs to completion. */

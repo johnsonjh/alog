@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/statvfs.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -25,18 +26,6 @@
 
 #if HAS_INCLUDE(<getopt.h>)
 # include <getopt.h>
-#endif
-
-#if defined(_AIX) || HAS_INCLUDE(<sys/statfs.h>)
-# include <sys/statfs.h>
-#endif
-
-#if HAS_INCLUDE(<sys/param.h>)
-# include <sys/param.h>
-#endif
-
-#if HAS_INCLUDE(<sys/mount.h>)
-# include <sys/mount.h>
 #endif
 
 #define DEF_SIZE 4096 /* log size Define */
@@ -176,7 +165,7 @@ int
 main (int argc, char *argv[])
 {
   FILE *fout, *fcon;
-  struct statfs statbuf;
+  struct statvfs statbuf;
   char *fnull;
   int i, j;            /* Temp vars */
   int op;              /* option return from getopt */
@@ -388,7 +377,7 @@ main (int argc, char *argv[])
 
       /* Make the log size a multiple of the default size */
       log_size = ((j / DEF_SIZE) + ((j % DEF_SIZE != 0) * 1)) * DEF_SIZE;
-      if (statfs (log_file_name, &statbuf) == 0)
+      if (statvfs (log_file_name, &statbuf) == 0)
         {
           free_bytes = (((statbuf.f_bfree * 4) * 1000));
           if ((log_size > free_bytes) && (free_bytes > DEF_SIZE))
@@ -430,7 +419,7 @@ main (int argc, char *argv[])
               /* Make the log size a multiple of the default size */
               log_size
                   = ((j / DEF_SIZE) + ((j % DEF_SIZE != 0) * 1)) * DEF_SIZE;
-              if (statfs (log_file_name, &statbuf) == 0)
+              if (statvfs (log_file_name, &statbuf) == 0)
                 {
                   free_bytes = (((statbuf.f_bfree * 4) * 1000));
                   if ((log_size - lp.size) > free_bytes)

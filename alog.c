@@ -17,19 +17,22 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-/*-------------------------------------
- * This define controls rounding of
- * log size for expanding or shrinking
- * the log. Set to 4096 for arbitrary
- * log sizes.
- *-------------------------------------*/
+#undef HAS_INCLUDE
+#if defined __has_include
+# define HAS_INCLUDE(inc) __has_include(inc)
+#else
+# define HAS_INCLUDE(inc) 0
+#endif
 
-#define DEF_SIZE 4096         /* log size Define */
+#if HAS_INCLUDE(<getopt.h>)
+# include <getopt.h>
+#endif
+
+#define DEF_SIZE 4096 /* log size Define */
 #define ALOG_MAGIC 0xf9f3f9f4 /* magic number for alog files */
 
-static int result = 0;      /* holds global exit value */
+static int result = 0; /* holds global exit value */
 
-/* The log file header contains information about the log file */
 struct bl_head /* log file header */
 {
   int magic;   /* magic number */
@@ -66,13 +69,6 @@ to_big_endian (struct bl_head *h)
     }
 }
 
-
-/*
- *-------------------------------------------------------
- * syntax() - Display the syntax message
- *-------------------------------------------------------
- */
-
 static void
 syntax (void)
 {
@@ -80,28 +76,17 @@ syntax (void)
   exit (1);
 } /* end syntax */
 
-/*
- * FUNCTION: This function sets the global result code if it's
- *              not already set.
- */
-
 static void
 set_result (int new_result)
-{
+{ /* sets the global result code if not already set. */
   if (result)
     return;
   result = new_result;
 }
 
-/*
- *-------------------------------------------------------
- * output_log() - Routine to output file in correct order
- *-------------------------------------------------------
- */
-
 static void
 output_log (char *log_file_name)
-{
+{ /* routine to output file in correct order */
   int i;
   struct bl_head lp;
   FILE *fin;
@@ -179,44 +164,31 @@ output_log (char *log_file_name)
 int
 main (int argc, char *argv[])
 {
-
-  /*********************************************************************/
-  /*********************************************************************/
-  /*********************************************************************/
-
-  FILE *fout, *fcon; /* File pointer */
+  FILE *fout, *fcon;
   struct statfs statbuf;
-  char *fnull; /* Pointer to /dev/null name */
-
-  int i, j;          /* Temp vars */
-  int op;            /* option return from getopt */
-  int free_bytes;    /* free bytes in filesystem */
-  extern char *optarg;
-  extern int opterr;
+  char *fnull;
+  int i, j;            /* Temp vars */
+  int op;              /* option return from getopt */
+  int free_bytes;      /* free bytes in filesystem */
 
   /**************** Default Values/Definitions */
-
   char *log_file_name; /* Pointer to Log file name */
-  int log_size = 0;        /* Current size of log */
+  int log_size = 0;    /* Current size of log */
   int log_shrink = 0;  /* We are shrinking the log size */
 
   /***************** Buffers & storage ptrs */
-  char tname[128];        /* Temp file name for shrink */
-  char cmd[256];          /* Used to build command */
-  char inbuf[BUFSIZ];     /* Input buffer */
+  char tname[128];     /* Temp file name for shrink */
+  char cmd[256];       /* Used to build command */
+  char inbuf[BUFSIZ];  /* Input buffer */
 
   /**************** Flags & control vars */
-  bool o_flag = false;    /* Output log flag */
-  bool q_flag = false;    /* Quiet logging flag */
-  bool s_flag = false;    /* Change size flag */
+  bool o_flag = false; /* Output log flag */
+  bool q_flag = false; /* Quiet logging flag */
+  bool s_flag = false; /* Change size flag */
 
-  struct bl_head lp; /* Setup control structure */
-  int bytes_inbuf;   /* bytes in from buffer */
+  struct bl_head lp;   /* Setup control structure */
+  int bytes_inbuf;     /* bytes in from buffer */
   int systemrc = 0;
-
-  /*********************************************************************/
-  /*********************************************************************/
-  /*********************************************************************/
 
   (void)setlocale (LC_ALL, ""); /* get locale env values */
 
@@ -310,21 +282,16 @@ main (int argc, char *argv[])
         } /* end case */
     } /* end while */
 
-  /* If there are syntax errors, then put out */
-  /* syntax msg in the following cases: */
+  /* If there are syntax errors, put out syntax msg in the following cases: */
   /* - the L_flag or o_flag flag is set */
-  /* Only put out the syntax message in these cases (and the */
-  /* cases already handled above) so that when alog is being used */
-  /* as a pipe, alog won't interupt the operation of the command */
-  /* that is calling it. */
+  /* Only put out the syntax message in these cases (and the cases already */
+  /* handled above) so that when alog is being used as a pipe, alog won't */
+  /* interupt the operation of the command that is calling it. */
   if (result == 1)
     syntax ();
 
-  /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=**=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
-          VALIDATE - Make all fields have an appropriate value
-                     Set values in case of failure to insure that
-                     alog always runs to completion.
-   *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=**=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*/
+  /* VALIDATE - Make all fields have an appropriate value set values in */
+  /* case of failure to insure that alog always runs to completion. */
   fnull = "/dev/null"; /* set /dev/null filename var */
 
   if (log_file_name == NULL) /* user did not specify log name */
@@ -342,11 +309,7 @@ main (int argc, char *argv[])
       /* make sure we have a log file name */
       if (strcmp (fnull, log_file_name) == 0)
         {
-          fprintf (stderr, "alog: Invalid file name.\n\
-Possible cause(s):\n\t\
-- The file name associated with the specified type\n\t\
-  was not found in the ODM database, or it does not have a value.\n\t\
-- /dev/null was specified.\n");
+          fprintf (stderr, "alog: Invalid file name.\n");
           exit (2);
         }
       else
@@ -390,10 +353,9 @@ Possible cause(s):\n\t\
           lp.current = 0;
           lp.bottom = 0;
           lp.size = 4096; /* Let's not do wrap too often */
-          set_result (2); /* return error because file was */
-                          /* not an alog file */
+          set_result (2); /* return error because file was not an alog file */
         }
-    } /* end if */
+    }
   else
     {
 
@@ -438,13 +400,9 @@ Possible cause(s):\n\t\
           fputc ('0', fout);
         }
       s_flag = false; /* Turn off s_flag flag */
-    } /* end else */
-  /*
-   *-------------------------------------------------------
-   * Time to check size to see if a new size has been specified
-   * as a parameter on input
-   *-------------------------------------------------------
-   */
+    }
+
+  /* check size to see if a new size has been specified as input parameter */
 
   /* if we're logging then see what size to use */
   if (s_flag)
@@ -475,8 +433,9 @@ Possible cause(s):\n\t\
               for (i = 0; i < j; i++)
                 fputc (0, fout);
               lp.size = log_size; /* put new size in log header */
-            } /* end else */
-        } /* end if */
+            }
+        }
+
       if (lp.size > log_size) /* Shrink the log file */
         {
           log_shrink = 1;
@@ -502,7 +461,8 @@ Possible cause(s):\n\t\
               remove (tname); /* remove temporary file */
               set_result (2);
             }
-        } /* end if */
+        }
+
       /* ready */
       if ((fout = fopen (log_file_name, "r+")) == NULL)
         {
@@ -511,11 +471,10 @@ Possible cause(s):\n\t\
             /* Could not open /dev/null */
             exit (-1);
           set_result (2); /* set result for later return code */
-        } /* end if */
+        }
 
-      /* Only write to the header if we are increasing the log. */
-      /* If we are shrinking, the log pointers have already been */
-      /* updated by the call to alog. */
+      /* Only write header if we are increasing the log. If shrinking, the */
+      /* log pointers have already been updated by the call to alog. */
       if (!log_shrink)
         {
           fseek (fout, 0, 0);
@@ -528,22 +487,16 @@ Possible cause(s):\n\t\
           fseek (fout, 0, 0);
           fread (&lp, sizeof (struct bl_head), 1, fout);
         }
-    } /* end if */
+    }
 
-  /*
-   *-------------------------------------------------------
-   * Now we're all set up, let's begin
-   * 1. Ignore the kill signal while reading/writing
+  /* 1. Ignore the kill signal while reading/writing
    * 2. Read from stdin and write to fcon and fout
-   * 3. When we reach the end of the log (lp.size),
-   *    go back to the top and set the bottom pointer
-   *    to the size of the log.
-   *-------------------------------------------------------
-   */
+   * 3. When we reach the end of the log (lp.size), go back to the top
+   *    and set the bottom pointer to the size of the log. */
 
   /* ignore the kill signal because we're starting to write to the log */
   signal (SIGINT, SIG_IGN);
-  fseek (fout, lp.current, 0); /* Goto starting point in log */
+  fseek (fout, lp.current, 0); /* goto starting point in log */
 
   j = 0;
 
@@ -552,15 +505,14 @@ Possible cause(s):\n\t\
     {
       for (i = 0; i < bytes_inbuf; i++) /* Output to file(s) */
         {
-          /* check to see if it is time to start writing to the */
-          /* top of the log again. */
+          /* check to see if its time to start writing the top of log again. */
           if (lp.current < lp.size)
             {
               putc (inbuf[i], fout);
               putc (inbuf[i], fcon);
               j++;
               lp.current++;
-            } /* end if */
+            }
           else /* wrap logic active when we reach the size of the log */
             { /* if we are logging to a file */
               fseek (fout, lp.top, 0); /* position pointer to top of log */
@@ -570,9 +522,9 @@ Possible cause(s):\n\t\
               j++;
               lp.current++;
               lp.bottom = lp.size; /* set bottom to size (end of log) */
-            } /* end else */
-        } /* end for loop */
-    } /* end while loop */
+            }
+        }
+    }
 
   if (lp.current > lp.bottom) /* adjust bottom of log */
     lp.bottom = lp.current;
@@ -586,8 +538,6 @@ Possible cause(s):\n\t\
   /* All done let's sync & close */
   fclose (fout);
   if (fcon != stdout)
-    {
-      fclose (fcon);
-    }
+    fclose (fcon);
   exit (result); /* return value of previous problems */
-} /* end main */
+}

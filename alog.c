@@ -2,18 +2,188 @@
 
 #define _ILS_MACROS
 
-#include "alog.h"
-#include "endian.h"
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <locale.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/statfs.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdbool.h>
 
-int result = 0;      /* holds global exit value */
-char c_flag = FALSE; /* flag for SMIT processing */
+#define TRUE 1
+#define FALSE 0
+
+/*-------------------------------------
+ * This define controls rounding of
+ * log size for expanding or shrinking
+ * the log. Set to 4096 for arbitrary
+ * log sizes.
+ *-------------------------------------*/
+
+#define DEF_SIZE 4096         /* log size Define */
+#define ALOG_MAGIC 0xf9f3f9f4 /* magic number for alog files */
+
+static int result = 0;      /* holds global exit value */
+
+/* The log file header contains information about the log file */
+struct bl_head /* log file header */
+{
+  int magic;   /* magic number */
+  int top;     /* top of log */
+  int current; /* current position in log */
+  int bottom;  /* bottom of log */
+  int size;    /* size of log */
+};
+
+static int
+is_little_endian (void)
+{
+  uint16_t i = 1;
+  return *(char *)&i;
+}
+
+static uint32_t
+swap_uint32 (uint32_t val)
+{
+  val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
+  return (val << 16) | (val >> 16);
+}
+
+static void
+to_big_endian (struct bl_head *h)
+{
+  if (is_little_endian ())
+    {
+      h->magic = swap_uint32 (h->magic);
+      h->top = swap_uint32 (h->top);
+      h->current = swap_uint32 (h->current);
+      h->bottom = swap_uint32 (h->bottom);
+      h->size = swap_uint32 (h->size);
+    }
+}
+
+
+/*
+ *-------------------------------------------------------
+ * syntax() - Display the syntax message
+ *-------------------------------------------------------
+ */
+
+static void
+syntax (void)
+{
+  fprintf (stderr, "Usage:\n\t\
+alog -f File [-o] | [ [-s Size] [-q] ]\n\t\
+alog -t LogType [-f File] [-o] | [ [-s Size] [-q] ]\n\t\
+alog -t LogType -V\n\t\
+alog -C -t LogType { [-f File] [-s Size] [-w Verbosity] }\n\t\
+alog -L [-t LogType]\n\t\
+alog -H\n");
+  exit (1);
+} /* end syntax */
+
+/*
+ * FUNCTION: This function sets the global result code if it's
+ *              not already set.
+ */
+
+static void
+set_result (int new_result)
+{
+  if (result)
+    return;
+  result = new_result;
+}
+
+/*
+ *-------------------------------------------------------
+ * output_log() - Routine to output file in correct order
+ *-------------------------------------------------------
+ */
+
+static void
+output_log (char *log_file_name)
+{
+  int i;
+  struct bl_head lp;
+  FILE *fin;
+
+  if ((fin = fopen (log_file_name, "r")) != NULL)
+    {
+      if (fread (&lp, sizeof (struct bl_head), 1, fin) != 1)
+        {
+          fprintf (stderr, "alog: Error reading log file header from %s.\n",
+                   log_file_name);
+          exit (2);
+        }
+      to_big_endian (&lp);
+      if (lp.magic != ALOG_MAGIC)
+        {
+          fprintf (stderr, "alog: %s is not an alog file.\n", log_file_name);
+          exit (2);
+        }
+      if (fseek (fin, lp.current, 0) != 0)
+        {
+          fprintf (stderr, "alog: Error seeking in log file %s.\n",
+                   log_file_name);
+          exit (2);
+        }
+    }
+  else
+    {
+      fprintf (stderr, "alog: Could not open file, %s.\n", log_file_name);
+      exit (2);
+    }
+
+  /* Output from current to bottom */
+  if (lp.current != lp.bottom)
+    {
+      for (i = lp.current; i < lp.bottom; i++)
+        {
+          int c = fgetc (fin);
+          if (c == EOF)
+            {
+              if (ferror (fin))
+                {
+                  fprintf (stderr, "alog: Error reading from log file %s.\n",
+                           log_file_name);
+                }
+              break;
+            }
+          putchar (c);
+        }
+    }
+
+  /* Output from top to current */
+  if (fseek (fin, lp.top, 0) != 0)
+    {
+      fprintf (stderr, "alog: Error seeking in log file %s.\n", log_file_name);
+      exit (2);
+    }
+  for (i = lp.top; i < lp.current; i++)
+    {
+      int c = fgetc (fin);
+      if (c == EOF)
+        {
+          if (ferror (fin))
+            {
+              fprintf (stderr, "alog: Error reading from log file %s.\n",
+                       log_file_name);
+            }
+          break;
+        }
+      putchar (c);
+    }
+
+  fclose (fin);
+} /* end output_log */
 
 int
 main (int argc, char *argv[])
@@ -29,7 +199,6 @@ main (int argc, char *argv[])
 
   int i, j;          /* Temp vars */
   int op;            /* option return from getopt */
-  int verbose_valid; /* true if verbosity is 0-9 */
   int free_bytes;    /* free bytes in filesystem */
   extern char *optarg;
   extern int opterr;
@@ -38,7 +207,6 @@ main (int argc, char *argv[])
 
   char *log_file_name; /* Pointer to Log file name */
   char *log_file_type; /* Pointer to Log file type */
-  char *log_verbose;   /* Pointer to verbosity level */
   char *chg_verb;      /* Pointer to new verbosity level */
   int log_size;        /* Current size of log */
   int log_shrink = 0;  /* We are shrinking the log size */
@@ -47,7 +215,6 @@ main (int argc, char *argv[])
   char tname[128];        /* Temp file name for shrink */
   char t_type[128];       /* Hold optarg log type */
   char t_verb[128];       /* Hold optarg log verbosity */
-  char log_size_arg[128]; /* Hold optarg log size */
   char cmd[256];          /* Used to build command */
   char inbuf[BUFSIZ];     /* Input buffer */
 
@@ -61,8 +228,6 @@ main (int argc, char *argv[])
   char t_flag = FALSE;     /* Type flag */
   char V_flag = FALSE;     /* Return verbosity value*/
   char w_flag = FALSE;     /* Change verbosity flag */
-  char valid_type = FALSE; /* Valid Type indicator */
-  char state = FALSE;      /* logging state control */
 
   struct bl_head lp; /* Setup control structure */
   int bytes_inbuf;   /* bytes in from buffer */
@@ -78,19 +243,14 @@ main (int argc, char *argv[])
   log_size = 0;
   log_file_name = NULL;
   log_file_type = NULL;
-  log_verbose = NULL;
   chg_verb = NULL;
   opterr = 0;
 
   /* Get command line options */
-  while ((op = getopt (argc, argv, "Cf:Loqcs:t:Vw:-H")) != EOF)
+  while ((op = getopt (argc, argv, "Cf:Loqs:t:Vw:-H")) != EOF)
     {
       switch (op)
         {
-        case 'c':
-          c_flag = TRUE;
-          break;
-
         case 'C': /* user specified change flag */
           C_flag = TRUE;
           break;
@@ -369,10 +529,10 @@ Possible cause(s):\n\t\
     /* Could not open /dev/null up above */
     exit (2);
 
-  /* Open the log file    */
+  /* Open the log file */
   if ((fout = fopen (log_file_name, "r+")) != NULL)
     {
-      /* Read header from file     */
+      /* Read header from file */
       fread (&lp, sizeof (struct bl_head), 1, fout);
       to_big_endian (&lp);
       /* See if magic number is the right value */
@@ -449,7 +609,7 @@ Possible cause(s):\n\t\
     {
       fclose (fout);
       fout = NULL;
-      if (lp.size < log_size) /* Increase size of log         */
+      if (lp.size < log_size) /* Increase size of log */
         {
           if ((fout = fopen (log_file_name, "a")) == NULL)
             ; /* Could not change size of log */
@@ -469,7 +629,7 @@ Possible cause(s):\n\t\
                     }
                 }
               j = log_size - lp.size;
-              /* Extend the log with zeros   */
+              /* Extend the log with zeros */
               for (i = 0; i < j; i++)
                 fputc (0, fout);
               lp.size = log_size; /* put new size in log header */
@@ -545,7 +705,7 @@ Possible cause(s):\n\t\
 
   j = 0;
 
-  /* Get input from stdin  */
+  /* Get input from stdin */
   while ((bytes_inbuf = read (0, inbuf, BUFSIZ)) > 0)
     {
       for (i = 0; i < bytes_inbuf; i++) /* Output to file(s) */
@@ -581,7 +741,7 @@ Possible cause(s):\n\t\
   fwrite (&lp, sizeof (struct bl_head), 1, fout);
   to_big_endian (&lp);
 
-  /* All done let's sync & close  */
+  /* All done let's sync & close */
   fclose (fout);
   if (fcon != stdout)
     {
@@ -589,16 +749,3 @@ Possible cause(s):\n\t\
     }
   exit (result); /* return value of previous problems */
 } /* end main */
-
-/*
- * FUNCTION: This function sets the global result code if it's
- *              not already set.
- */
-
-void
-set_result (int new_result)
-{
-  if (result)
-    return;
-  result = new_result;
-}

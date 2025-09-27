@@ -1,6 +1,8 @@
 *.alog
 alog
 a.out
+/bootlog
+/bosinstlog
 *.core
 core
 core-*

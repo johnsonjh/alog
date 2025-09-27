@@ -76,13 +76,7 @@ to_big_endian (struct bl_head *h)
 static void
 syntax (void)
 {
-  fprintf (stderr, "Usage:\n\t\
-alog -f File [-o] | [ [-s Size] [-q] ]\n\t\
-alog -t LogType [-f File] [-o] | [ [-s Size] [-q] ]\n\t\
-alog -t LogType -V\n\t\
-alog -C -t LogType { [-f File] [-s Size] [-w Verbosity] }\n\t\
-alog -L [-t LogType]\n\t\
-alog -H\n");
+  fprintf (stderr, "Usage:\n\talog -f File [-o] | [ [-s Size] [-q] ]\n\talog -H\n");
   exit (1);
 } /* end syntax */
 
@@ -203,28 +197,18 @@ main (int argc, char *argv[])
   /**************** Default Values/Definitions */
 
   char *log_file_name; /* Pointer to Log file name */
-  char *log_file_type; /* Pointer to Log file type */
-  char *chg_verb;      /* Pointer to new verbosity level */
-  int log_size;        /* Current size of log */
+  int log_size = 0;        /* Current size of log */
   int log_shrink = 0;  /* We are shrinking the log size */
 
   /***************** Buffers & storage ptrs */
   char tname[128];        /* Temp file name for shrink */
-  char t_type[128];       /* Hold optarg log type */
-  char t_verb[128];       /* Hold optarg log verbosity */
   char cmd[256];          /* Used to build command */
   char inbuf[BUFSIZ];     /* Input buffer */
 
   /**************** Flags & control vars */
-  bool C_flag = false;    /* Change attribute flag */
-  bool f_flag = false;    /* File name flag */
-  bool L_flag = false;    /* List attributes flag */
   bool o_flag = false;    /* Output log flag */
   bool q_flag = false;    /* Quiet logging flag */
   bool s_flag = false;    /* Change size flag */
-  bool t_flag = false;    /* Type flag */
-  bool V_flag = false;    /* Return verbosity value*/
-  bool w_flag = false;    /* Change verbosity flag */
 
   struct bl_head lp; /* Setup control structure */
   int bytes_inbuf;   /* bytes in from buffer */
@@ -237,23 +221,15 @@ main (int argc, char *argv[])
   (void)setlocale (LC_ALL, ""); /* get locale env values */
 
   /* Set all control vals to zero */
-  log_size = 0;
   log_file_name = NULL;
-  log_file_type = NULL;
-  chg_verb = NULL;
   opterr = 0;
 
   /* Get command line options */
-  while ((op = getopt (argc, argv, "Cf:Loqs:t:Vw:-H")) != EOF)
+  while ((op = getopt (argc, argv, "f:oqs:H")) != EOF)
     {
       switch (op)
         {
-        case 'C': /* user specified change flag */
-          C_flag = true;
-          break;
-
         case 'f': /* user specified log name */
-          f_flag = true;
           log_file_name = malloc (strlen (optarg) + 1);
           if (log_file_name == NULL)
             {
@@ -261,10 +237,6 @@ main (int argc, char *argv[])
               exit (1);
             }
           strcpy (log_file_name, optarg);
-          break;
-
-        case 'L': /* user specified list flag */
-          L_flag = true;
           break;
 
         case 'o': /* output log to screen */
@@ -324,24 +296,6 @@ main (int argc, char *argv[])
           }
           break;
 
-        case 't': /* user specified log type */
-          t_flag = true;
-          strcpy (t_type, optarg);
-          log_file_type = t_type;
-          break;
-
-        case 'V': /* get verbosity level */
-          V_flag = true;
-          break;
-
-        case 'w': /* user specified verbosity */
-          w_flag = true;
-          strcpy (t_verb, optarg);
-          if (isdigit (t_verb[0]) && !(t_verb[1])
-              && (strcmp (t_verb, "00") != 0))
-            chg_verb = t_verb;
-          break;
-
         case '?': /* put syntax/usage msg */
           set_result (1);
           break;
@@ -363,93 +317,8 @@ main (int argc, char *argv[])
   /* cases already handled above) so that when alog is being used */
   /* as a pipe, alog won't interupt the operation of the command */
   /* that is calling it. */
-  if ((result == 1) && (C_flag || L_flag || o_flag))
+  if (result == 1)
     syntax ();
-
-  /* Flag combination check */
-
-  /* the t flag is required with the C flag */
-  /* the s, f, or w flag is required with C and t */
-  /* the other flags are not valid with the C flag */
-  if (C_flag)
-    if ((!t_flag) || (!(s_flag || f_flag || w_flag))
-        || (L_flag || o_flag || q_flag || V_flag))
-      set_result (1); /* syntax return code */
-
-  /* the L and V flags are not valid with the f flag */
-  if (f_flag)
-    if (L_flag || V_flag)
-      set_result (1); /* syntax return code */
-
-  /* these flags are not valid with the L flag */
-  if (L_flag)
-    if (C_flag || f_flag || o_flag || s_flag || q_flag || V_flag || w_flag)
-      set_result (1); /* syntax return code */
-
-  /* either the f or t flag is required with the o flag */
-  /* the other flags are not valid with the o flag */
-  if (o_flag)
-    if ((!f_flag && !t_flag)
-        || (C_flag || L_flag || s_flag || q_flag || V_flag || w_flag))
-      set_result (1); /* syntax return code */
-
-  /* either the f or t flag is required with the q flag */
-  /* the other flags are not valid with the q flag */
-  if (q_flag)
-    if ((!f_flag && !t_flag)
-        || (C_flag || L_flag || o_flag || V_flag || w_flag))
-      set_result (1); /* syntax return code */
-
-  /* either the f or t flag is required with the s flag */
-  /* the other flags are not valid with the s flag */
-  if (s_flag)
-    if ((!f_flag && !t_flag) || (L_flag || o_flag || V_flag))
-      set_result (1); /* syntax return code */
-
-  /* the t flag is required with the V flag */
-  /* the other flags are not valid with the V flag */
-  if (V_flag)
-    if ((!t_flag)
-        || (C_flag || f_flag || L_flag || o_flag || s_flag || q_flag
-            || w_flag))
-      set_result (1); /* syntax return code */
-
-  /* the C and t flags are required with the w flag */
-  /* the other flags are not valid with the w flag */
-  if (w_flag)
-    if ((!C_flag || !t_flag) || (L_flag || o_flag || q_flag || V_flag))
-      set_result (1); /* syntax return code */
-
-  /* only put out the bad flag combo for when the output flags are */
-  /* specified. */
-  if ((result == 1) && (C_flag || L_flag || o_flag))
-    {
-      fprintf (stderr, "alog: Invalid combination \
-of flags.\n");
-      syntax ();
-    }
-
-  /* Make sure that the verbosity is a value 0 through 9. */
-  if ((w_flag) && (chg_verb == NULL))
-    {
-      set_result (1);
-      fprintf (stderr, "alog: The verbosity \
-'%s' is not a valid verbosity value.\n\
-The verbosity value must be within the range 0 to 9.\n",
-               t_verb);
-      syntax ();
-    }
-
-  /* Check for type and change/retrieve info from ODM database if needed */
-  if (log_file_type != NULL) /* user specified log type */
-    {
-        if (C_flag || L_flag || o_flag)
-          {
-            fprintf (stderr, "alog: %s is not an alog type.\n",
-                     log_file_type);
-            exit (2); /* exit so no more processing is done */
-          }
-    } /* end if */
 
   /*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=**=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
           VALIDATE - Make all fields have an appropriate value
@@ -486,30 +355,6 @@ Possible cause(s):\n\t\
           exit (0);
         }
     }
-
-  /* Check to see if list attributes mode is selected without -t */
-  /* This is for when a log type was not entered. */
-  if (L_flag)
-    {
-      // set_result(output_attr(log_file_type));
-      exit (result);
-    }
-
-  /* Check to see if verbose level display mode is selected */
-  /* Only return verbosity level to stdout if a valid_type is entered */
-  /* and there were no syntax errors. */
-  if ((V_flag) && (!f_flag))
-    {
-      exit (2); /* the type was not valid so exit */
-    }
-
-  /*
-   *----------------------------------------------------------------
-   * Check to see the current verbosity level. If verbosity is
-   * turned off then set log_file_name to /dev/null. This overrides
-   * the filename and prevents any log from being generated.
-   *----------------------------------------------------------------
-   */
 
   /* Setup file pointers */
 

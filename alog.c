@@ -28,10 +28,10 @@
 # include <getopt.h>
 #endif
 
-#define DEF_SIZE 4096 /* log size Define */
+#define DEF_SIZE   4096       /* log size default */
 #define ALOG_MAGIC 0xf9f3f9f4 /* magic number for alog files */
 
-static int result = 0; /* holds global exit value */
+static int result = 0; /* global exit value */
 
 struct bl_head /* log file header */
 {
@@ -46,13 +46,16 @@ static int
 is_little_endian (void)
 {
   uint16_t i = 1;
+
   return *(char *)&i;
 }
 
 static uint32_t
 swap_uint32 (uint32_t val)
 {
-  val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
+  val = ((val << 8) & 0xFF00FF00) |
+        ((val >> 8) & 0xFF00FF);
+
   return (val << 16) | (val >> 16);
 }
 
@@ -61,11 +64,11 @@ to_big_endian (struct bl_head *h)
 {
   if (is_little_endian ())
     {
-      h->magic = swap_uint32 (h->magic);
-      h->top = swap_uint32 (h->top);
+      h->magic   = swap_uint32 (h->magic);
+      h->top     = swap_uint32 (h->top);
       h->current = swap_uint32 (h->current);
-      h->bottom = swap_uint32 (h->bottom);
-      h->size = swap_uint32 (h->size);
+      h->bottom  = swap_uint32 (h->bottom);
+      h->size    = swap_uint32 (h->size);
     }
 }
 
@@ -74,13 +77,14 @@ syntax (int ret)
 {
   fprintf (stderr, "Usage:\n\talog [ -f File [ -s Size ] ] [ -o ] [ -q ]\n\talog -H\n");
   exit (ret);
-} /* end syntax */
+}
 
 static void
 set_result (int new_result)
 { /* sets the global result code if not already set. */
   if (result)
     return;
+
   result = new_result;
 }
 
@@ -99,12 +103,15 @@ output_log (char *log_file_name)
                    log_file_name);
           exit (2);
         }
+
       to_big_endian (&lp);
+
       if (lp.magic != ALOG_MAGIC)
         {
           fprintf (stderr, "alog: %s is not an alog file.\n", log_file_name);
           exit (2);
         }
+
       if (fseek (fin, lp.current, 0) != 0)
         {
           fprintf (stderr, "alog: Error seeking in log file %s.\n",
@@ -124,15 +131,16 @@ output_log (char *log_file_name)
       for (i = lp.current; i < lp.bottom; i++)
         {
           int c = fgetc (fin);
+
           if (c == EOF)
             {
               if (ferror (fin))
-                {
-                  fprintf (stderr, "alog: Error reading from log file %s.\n",
-                           log_file_name);
-                }
+                fprintf (stderr, "alog: Error reading from log file %s.\n",
+                         log_file_name);
+
               break;
             }
+
           putchar (c);
         }
     }
@@ -143,23 +151,25 @@ output_log (char *log_file_name)
       fprintf (stderr, "alog: Error seeking in log file %s.\n", log_file_name);
       exit (2);
     }
+
   for (i = lp.top; i < lp.current; i++)
     {
       int c = fgetc (fin);
+
       if (c == EOF)
         {
           if (ferror (fin))
-            {
-              fprintf (stderr, "alog: Error reading from log file %s.\n",
-                       log_file_name);
-            }
+            fprintf (stderr, "alog: Error reading from log file %s.\n",
+                     log_file_name);
+
           break;
         }
+
       putchar (c);
     }
 
   fclose (fin);
-} /* end output_log */
+}
 
 int
 main (int argc, char *argv[])
@@ -173,7 +183,7 @@ main (int argc, char *argv[])
 
   /**************** Default Values/Definitions */
   char *log_file_name; /* Pointer to Log file name */
-  int log_size = 0;    /* Current size of log */
+  int log_size   = 0;  /* Current size of log */
   int log_shrink = 0;  /* We are shrinking the log size */
 
   /***************** Buffers & storage ptrs */
@@ -203,11 +213,13 @@ main (int argc, char *argv[])
         {
         case 'f': /* user specified log name */
           log_file_name = malloc (strlen (optarg) + 1);
+
           if (log_file_name == NULL)
             {
               fprintf (stderr, "alog: Out of memory.\n");
               exit (1);
             }
+
           strcpy (log_file_name, optarg);
           break;
 
@@ -249,22 +261,14 @@ main (int argc, char *argv[])
               }
 
             if (size_arg > 2147483647) //-V547
-              {
-                log_size = 2147483647;
-              }
+              log_size = 2147483647;
             else
-              {
-                log_size = (int)size_arg;
-              }
+              log_size = (int)size_arg;
 
             if (log_size <= 0)
-              {
-                set_result (1); /* invalid size specified */
-              }
+              set_result (1); /* invalid size specified */
             else
-              {
-                s_flag = true;
-              }
+              s_flag = true;
           }
           break;
 
@@ -279,19 +283,21 @@ main (int argc, char *argv[])
         default:          /* set syntax return code */
           set_result (1); /* for future use */
           break;
-        } /* end case */
-    } /* end while */
+        }
+    }
 
   /* If there are syntax errors, put out syntax msg in the following cases: */
   /* - the L_flag or o_flag flag is set */
   /* Only put out the syntax message in these cases (and the cases already */
   /* handled above) so that when alog is being used as a pipe, alog won't */
   /* interupt the operation of the command that is calling it. */
+
   if (result == 1)
     syntax (1);
 
   /* VALIDATE - Make all fields have an appropriate value set values in */
   /* case of failure to insure that alog always runs to completion. */
+
   fnull = "/dev/null"; /* set /dev/null filename var */
 
   if (log_file_name == NULL) /* user did not specify log name */
@@ -305,8 +311,7 @@ main (int argc, char *argv[])
 
   /* Check to see if output mode is selected */
   if (o_flag)
-    {
-      /* make sure we have a log file name */
+    { /* make sure we have a log file name */
       if (strcmp (fnull, log_file_name) == 0)
         {
           fprintf (stderr, "alog: Invalid file name.\n");
@@ -324,68 +329,66 @@ main (int argc, char *argv[])
   /* If the quiet logging flag was specified ... */
   /* try to open /dev/null to use as the "console" */
   if (q_flag)
-    {
-      fcon = fopen (fnull, "a");
-    }
+    fcon = fopen (fnull, "a");
   else /* normal logging, so assign stdout to fcon, the "console" */
     fcon = stdout;
 
-  if (fcon == NULL)
-    /* Could not open /dev/null up above */
+  if (fcon == NULL) /* Could not open /dev/null up above */
     exit (2);
 
   /* Open the log file */
   if ((fout = fopen (log_file_name, "r+")) != NULL)
-    {
-      /* Read header from file */
+    { /* Read header from file */
       fread (&lp, sizeof (struct bl_head), 1, fout);
       to_big_endian (&lp);
+
       /* See if magic number is the right value */
       if (lp.magic != ALOG_MAGIC)
         { /* the header is not correct */
           fclose (fout);
+
           if ((fout = fopen (fnull, "w")) == NULL) /* log to dev/null */
-            /* Could not open /dev/null */
-            exit (2);
+            exit (2); /* Could not open /dev/null */
+
           /* build a header to use */
-          lp.magic = ALOG_MAGIC;
-          lp.top = 0;
+          lp.magic   = ALOG_MAGIC;
+          lp.top     = 0;
           lp.current = 0;
-          lp.bottom = 0;
-          lp.size = 4096; /* Let's not do wrap too often */
-          set_result (2); /* return error because file was not an alog file */
+          lp.bottom  = 0;
+          lp.size    = 4096; /* Let's not do wrap too often */
+          set_result (2);    /* return error; not an alog file */
         }
     }
   else
-    {
-
-      /* set up the header */
-      lp.magic = ALOG_MAGIC;            /* Create the magic number */
-      lp.top = sizeof (struct bl_head); /* point to 1st char */
+    { /* set up the header */
+      lp.magic   = ALOG_MAGIC;              /* Create the magic number */
+      lp.top     = sizeof (struct bl_head); /* point to 1st char */
       lp.current = lp.top;
-      lp.bottom = lp.current;
-      j = log_size;
+      lp.bottom  = lp.current;
+      j          = log_size;
 
       if ((fout = fopen (log_file_name, "w")) == NULL)
-        {
-          /* Could not open log file, so log to /dev/null */
+        { /* Could not open log file, so log to /dev/null */
           if ((fout = fopen (fnull, "w")) == NULL)
-            /* Could not open /dev/null */
-            exit (2);
+            exit (2); /* Could not open /dev/null */
+
           set_result (2); /* set result for later return code */
-        } /* end if */
+        }
 
       /* Make the log size a multiple of the default size */
       log_size = ((j / DEF_SIZE) + ((j % DEF_SIZE != 0) * 1)) * DEF_SIZE;
+
       if (statvfs (log_file_name, &statbuf) == 0)
         {
           free_bytes = (((statbuf.f_bfree * 4) * 1000));
+
           if ((log_size > free_bytes) && (free_bytes > DEF_SIZE))
             {
               log_size = DEF_SIZE;
               set_result (2);
             }
         }
+
       lp.size = log_size;
 
       /* Initialize the header and fill the log with zeroes */
@@ -394,11 +397,10 @@ main (int argc, char *argv[])
       fwrite (&lp, sizeof (struct bl_head), 1, fout);
       to_big_endian (&lp);
       fseek (fout, lp.top, 0);
-      for (i = 0; i < (lp.size - sizeof (struct bl_head));
-           i++) /* Fill the log with zeros */
-        {
-          fputc ('0', fout);
-        }
+
+      for (i = 0; i < (lp.size - sizeof (struct bl_head)); i++)
+        fputc ('0', fout); /* Fill the log with zeros */
+
       s_flag = false; /* Turn off s_flag flag */
     }
 
@@ -409,29 +411,34 @@ main (int argc, char *argv[])
     {
       fclose (fout);
       fout = NULL;
+
       if (lp.size < log_size) /* Increase size of log */
         {
-          if ((fout = fopen (log_file_name, "a")) == NULL)
-            ; /* Could not change size of log */
-          else
+          if ((fout = fopen (log_file_name, "a")) == NULL);
+          else /* Could not change size of log */
             {
               j = log_size;
               /* Make the log size a multiple of the default size */
               log_size
                   = ((j / DEF_SIZE) + ((j % DEF_SIZE != 0) * 1)) * DEF_SIZE;
+
               if (statvfs (log_file_name, &statbuf) == 0)
                 {
                   free_bytes = (((statbuf.f_bfree * 4) * 1000));
+
                   if ((log_size - lp.size) > free_bytes)
                     {
                       log_size = lp.size;
                       set_result (2);
                     }
                 }
+
               j = log_size - lp.size;
+
               /* Extend the log with zeros */
               for (i = 0; i < j; i++)
                 fputc (0, fout);
+
               lp.size = log_size; /* put new size in log header */
             }
         }
@@ -440,6 +447,7 @@ main (int argc, char *argv[])
         {
           log_shrink = 1;
           j = log_size;
+
           /* Make the log size a multiple of the default size */
           log_size = ((j / DEF_SIZE) + ((j % DEF_SIZE != 0) * 1)) * DEF_SIZE;
 
@@ -465,11 +473,10 @@ main (int argc, char *argv[])
 
       /* ready */
       if ((fout = fopen (log_file_name, "r+")) == NULL)
-        {
-          /* Could not open (resized) log file, so log to /dev/null */
+        { /* Could not open (resized) log file, so log to /dev/null */
           if ((fout = fopen (fnull, "r+")) == NULL)
-            /* Could not open /dev/null */
-            exit (-1);
+            exit (-1); /* Could not open /dev/null */
+
           set_result (2); /* set result for later return code */
         }
 
@@ -504,8 +511,7 @@ main (int argc, char *argv[])
   while ((bytes_inbuf = read (0, inbuf, BUFSIZ)) > 0)
     {
       for (i = 0; i < bytes_inbuf; i++) /* Output to file(s) */
-        {
-          /* check to see if its time to start writing the top of log again. */
+        { /* check to see if its time to start writing the top of log again. */
           if (lp.current < lp.size)
             {
               putc (inbuf[i], fout);
@@ -537,7 +543,9 @@ main (int argc, char *argv[])
 
   /* All done let's sync & close */
   fclose (fout);
+
   if (fcon != stdout)
     fclose (fcon);
+
   exit (result); /* return value of previous problems */
 }

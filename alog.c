@@ -264,7 +264,7 @@ main (int argc, char *argv[])
                 break;
               }
 
-            if (size_arg > 2147483647) //-V547
+            if (size_arg > 2147483647) /* //-V547 */
               log_size = 2147483647;
             else
               log_size = (int)size_arg;

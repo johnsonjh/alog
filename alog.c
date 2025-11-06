@@ -1,6 +1,10 @@
-/* alog - Control for a log file */
+/* alog */
 
-#define _ILS_MACROS
+#if defined (_AIX)
+# if !defined _ALL_SOURCE
+#  define _ALL_SOURCE
+# endif
+#endif
 
 #include <ctype.h>
 #include <errno.h>

@@ -50,7 +50,7 @@ is_little_endian (void)
 {
   uint16_t i = 1;
 
-  return *(char *)&i;
+  return *(char *)& i;
 }
 
 /*****************************************************************************/
@@ -67,15 +67,15 @@ swap_uint32 (uint32_t val)
 /*****************************************************************************/
 
 static void
-to_big_endian (struct bl_head *h)
-{
+to_big_endian (struct bl_head * h)
+{ /* cppcheck-suppress knownConditionTrueFalse */
   if (is_little_endian ())
     {
-      h->magic   = (int)swap_uint32 ((uint32_t)h->magic);
-      h->top     = (int)swap_uint32 ((uint32_t)h->top);
-      h->current = (int)swap_uint32 ((uint32_t)h->current);
-      h->bottom  = (int)swap_uint32 ((uint32_t)h->bottom);
-      h->size    = (int)swap_uint32 ((uint32_t)h->size);
+      h -> magic   = (int)swap_uint32 ((uint32_t)h -> magic);
+      h -> top     = (int)swap_uint32 ((uint32_t)h -> top);
+      h -> current = (int)swap_uint32 ((uint32_t)h -> current);
+      h -> bottom  = (int)swap_uint32 ((uint32_t)h -> bottom);
+      h -> size    = (int)swap_uint32 ((uint32_t)h -> size);
     }
 }
 
@@ -105,28 +105,30 @@ set_result (int new_result)
 /*****************************************************************************/
 
 static void
-output_log (char *log_file_name)
+output_log (const char * log_file_name)
 { /* routine to output file in correct order */
   int i;
   struct bl_head lp;
-  FILE *fin;
+  FILE * fin;
 
   if ((fin = fopen (log_file_name, "r")) != NULL)
     {
-      if (fread (&lp, sizeof (struct bl_head), 1, fin) != 1)
+      if (fread (& lp, sizeof (struct bl_head), 1, fin) != 1)
         {
           (void)fprintf (stderr,
                          "alog: Error reading log file header from %s.\n",
                          log_file_name);
+
           exit (2);
         }
 
-      to_big_endian (&lp);
+      to_big_endian (& lp);
 
       if ((uint32_t)lp.magic != ALOG_MAGIC)
         {
           (void)fprintf (stderr, "alog: %s is not an alog file.\n",
                          log_file_name);
+
           exit (2);
         }
 
@@ -134,6 +136,7 @@ output_log (char *log_file_name)
         {
           (void)fprintf (stderr, "alog: Error seeking in log file %s.\n",
                          log_file_name);
+
           exit (2);
         }
     }
@@ -141,6 +144,7 @@ output_log (char *log_file_name)
     {
       (void)fprintf (stderr, "alog: Could not open file, %s.\n",
                      log_file_name);
+
       exit (2);
     }
 
@@ -170,6 +174,7 @@ output_log (char *log_file_name)
     {
       (void)fprintf (stderr, "alog: Error seeking in log file %s.\n",
                      log_file_name);
+
       exit (2);
     }
 
@@ -204,15 +209,15 @@ round_log_size (int size)
 /*****************************************************************************/
 
 static long long
-fs_free_bytes (const char *path)
+fs_free_bytes (const char * path)
 { /* free bytes on the filesystem holding path, or -1 if it can't be told */
   struct statvfs sb;
   unsigned long bs;
 
-  if (statvfs (path, &sb) != 0)
+  if (statvfs (path, & sb) != 0)
     return -1;
 
-  bs = sb.f_frsize ? sb.f_frsize : sb.f_bsize;
+  bs = (sb.f_frsize ? sb.f_frsize : sb.f_bsize);
 
   return (long long)sb.f_bfree * (long long)bs;
 }
@@ -220,28 +225,32 @@ fs_free_bytes (const char *path)
 /*****************************************************************************/
 
 static int
-shrink_log (char *log_file_name, struct bl_head *lp, int new_size)
+shrink_log (char * log_file_name, struct bl_head * lp, int new_size)
 {
   struct bl_head nlp, disk;
   struct stat st;
-  FILE *fin, *fout;
-  char *data = NULL;
-  char *tname;
+  FILE * fout;
+  char * data = NULL;
+  char * tname;
   long datalen;
   long i;
   int hdr = (int)sizeof (struct bl_head);
   int have_mode = 0;
 
-  if (lp->top < hdr || lp->current < lp->top || lp->bottom < lp->current
-      || lp->bottom > lp->size)
+  if (lp -> top < hdr               ||
+      lp -> current < lp -> top     ||
+      lp -> bottom  < lp -> current ||
+      lp -> bottom  > lp -> size)
     return -1;
 
-  datalen = (long)lp->bottom - (long)lp->top; /* total bytes of live data */
+  datalen = (long)lp -> bottom - (long)lp -> top; /* total bytes of live data */
 
   if (datalen > 0)
     {
-      long seg1 = (long)lp->bottom - (long)lp->current;
-      long seg2 = (long)lp->current - (long)lp->top;
+      FILE * fin;
+
+      long seg1 = (long)lp -> bottom  - (long)lp -> current;
+      long seg2 = (long)lp -> current - (long)lp -> top;
 
       if ((data = (char *)calloc ((size_t)datalen, 1)) == NULL)
         return -1;
@@ -249,19 +258,21 @@ shrink_log (char *log_file_name, struct bl_head *lp, int new_size)
       if ((fin = fopen (log_file_name, "r")) == NULL)
         {
           free (data);
+
           return -1;
         }
 
       if ((seg1 > 0
-           && (fseek (fin, lp->current, SEEK_SET) != 0
+           && (fseek (fin, lp -> current, SEEK_SET) != 0
                || fread (data, 1, (size_t)seg1, fin) != (size_t)seg1))
           || (seg2 > 0
-              && (fseek (fin, lp->top, SEEK_SET) != 0
+              && (fseek (fin, lp -> top, SEEK_SET) != 0
                   || fread (data + seg1, 1, (size_t)seg2, fin)
                        != (size_t)seg2)))
         {
           (void)fclose (fin);
           free (data);
+
           return -1;
         }
 
@@ -277,6 +288,7 @@ shrink_log (char *log_file_name, struct bl_head *lp, int new_size)
   if ((tname = (char *)malloc (strlen (log_file_name) + 32)) == NULL)
     {
       free (data);
+
       return -1;
     }
 
@@ -286,12 +298,13 @@ shrink_log (char *log_file_name, struct bl_head *lp, int new_size)
     {
       free (data);
       free (tname);
+
       return -1;
     }
 
   disk = nlp;
-  to_big_endian (&disk);
-  (void)fwrite (&disk, sizeof (struct bl_head), 1, fout);
+  to_big_endian (& disk);
+  (void)fwrite (& disk, sizeof (struct bl_head), 1, fout);
   (void)fseek (fout, nlp.top, SEEK_SET);
 
   for (i = 0; i < (long)new_size - hdr; i++)
@@ -308,7 +321,7 @@ shrink_log (char *log_file_name, struct bl_head *lp, int new_size)
           nlp.bottom  = nlp.size;
         }
 
-      (void)putc (data[i], fout);
+      (void)putc (data [i], fout);
       nlp.current++;
     }
 
@@ -317,18 +330,19 @@ shrink_log (char *log_file_name, struct bl_head *lp, int new_size)
 
   (void)fseek (fout, 0, SEEK_SET);
   disk = nlp;
-  to_big_endian (&disk);
-  (void)fwrite (&disk, sizeof (struct bl_head), 1, fout);
+  to_big_endian (& disk);
+  (void)fwrite (& disk, sizeof (struct bl_head), 1, fout);
 
   if (fclose (fout) != 0)
     {
       (void)remove (tname);
       free (data);
       free (tname);
+
       return -1;
     }
 
-  if (stat (log_file_name, &st) == 0)
+  if (stat (log_file_name, & st) == 0)
     have_mode = 1;
 
   if (have_mode)
@@ -339,10 +353,11 @@ shrink_log (char *log_file_name, struct bl_head *lp, int new_size)
       (void)remove (tname);
       free (data);
       free (tname);
+
       return -1;
     }
 
-  *lp = nlp;
+  * lp = nlp;
   free (data);
   free (tname);
 
@@ -352,27 +367,27 @@ shrink_log (char *log_file_name, struct bl_head *lp, int new_size)
 /*****************************************************************************/
 
 int
-main (int argc, char *argv[])
+main (int argc, char * argv [])
 {
-  FILE *fout, *fcon;
-  char *fnull;
-  int i, j;            /* Temp vars */
-  int op;              /* option return from getopt */
+  FILE * fout, * fcon;
+  char * fnull;
+  int i, j;             /* Temp vars */
+  int op;               /* option return from getopt */
 
   /**************** Default Values/Definitions */
-  char *log_file_name; /* Pointer to Log file name */
-  int log_size = 0;    /* Current size of log */
+  char * log_file_name; /* Pointer to Log file name */
+  int log_size = 0;     /* Current size of log */
 
   /***************** Buffers & storage ptrs */
-  char inbuf[BUFSIZ];  /* Input buffer */
+  char inbuf [BUFSIZ];  /* Input buffer */
 
   /**************** Flags & control vars */
-  bool o_flag = false; /* Output log flag */
-  bool q_flag = false; /* Quiet logging flag */
-  bool s_flag = false; /* Change size flag */
+  bool o_flag = false;  /* Output log flag */
+  bool q_flag = false;  /* Quiet logging flag */
+  bool s_flag = false;  /* Change size flag */
 
-  struct bl_head lp;   /* Setup control structure */
-  ssize_t bytes_inbuf; /* bytes in from buffer */
+  struct bl_head lp;    /* Setup control structure */
+  ssize_t bytes_inbuf;  /* bytes in from buffer */
 
   (void)setlocale (LC_ALL, ""); /* get locale env values */
 
@@ -391,27 +406,31 @@ main (int argc, char *argv[])
           if (log_file_name == NULL)
             {
               (void)fprintf (stderr, "alog: Out of memory.\n");
+
               exit (1);
             }
 
           (void)strcpy (log_file_name, optarg);
+
           break;
 
         case 'o': /* output log to screen */
           o_flag = true;
+
           break;
 
         case 'q': /* quiet logging - no cons output */
           q_flag = true;
+
           break;
 
         case 's': /* user specified log size */
           {
-            char *endptr;
+            char * endptr;
             long size_arg;
 
             errno = 0;
-            size_arg = strtol (optarg, &endptr, 10);
+            size_arg = strtol (optarg, & endptr, 10);
 
             if (errno == ERANGE)
               {
@@ -419,15 +438,17 @@ main (int argc, char *argv[])
                                "alog: Out of range error for size '%s'.\n",
                                optarg);
                 set_result (1);
+
                 break;
               }
 
-            if (endptr == optarg || *endptr != '\0')
+            if (endptr == optarg || * endptr != '\0')
               {
                 (void)fprintf (stderr,
                                "alog: Invalid number for size '%s'.\n",
                                optarg);
                 set_result (1);
+
                 break;
               }
 
@@ -437,6 +458,7 @@ main (int argc, char *argv[])
                                "alog: Limits exceeded for size '%s'.\n",
                                optarg);
                 set_result (1);
+
                 break;
               }
 
@@ -447,18 +469,22 @@ main (int argc, char *argv[])
             else
               s_flag = true;
           }
+
           break;
 
         case '?': /* put syntax/usage msg */
           set_result (1);
+
           break;
 
         case 'H': /* help */
           syntax (0);
+
           break;
 
         default:          /* set syntax return code */
           set_result (1); /* for future use */
+
           break;
         }
     }
@@ -493,11 +519,13 @@ main (int argc, char *argv[])
       if (strcmp (fnull, log_file_name) == 0)
         {
           (void)fprintf (stderr, "alog: Invalid file name.\n");
+
           exit (2);
         }
       else
         {
           output_log (log_file_name);
+
           exit (0);
         }
     }
@@ -517,10 +545,10 @@ main (int argc, char *argv[])
   /* Open the log file */
   if ((fout = fopen (log_file_name, "r+")) != NULL)
     { /* Read header from file */
-      if (fread (&lp, sizeof (struct bl_head), 1, fout) != 1)
+      if (fread (& lp, sizeof (struct bl_head), 1, fout) != 1)
         lp.magic = 0; /* short/unreadable header: not an alog file */
 
-      to_big_endian (&lp);
+      to_big_endian (& lp);
 
       /* See if magic number is the right value */
       if ((uint32_t)lp.magic != ALOG_MAGIC)
@@ -573,9 +601,9 @@ main (int argc, char *argv[])
 
       /* Initialize the header and fill the log with zeroes */
       (void)fseek (fout, 0, 0);
-      to_big_endian (&lp);
-      (void)fwrite (&lp, sizeof (struct bl_head), 1, fout);
-      to_big_endian (&lp);
+      to_big_endian (& lp);
+      (void)fwrite (& lp, sizeof (struct bl_head), 1, fout);
+      to_big_endian (& lp);
       (void)fseek (fout, lp.top, 0);
 
       for (i = 0; i < lp.size - (int)sizeof (struct bl_head); i++)
@@ -620,7 +648,7 @@ main (int argc, char *argv[])
         }
       else if (lp.size > log_size) /* Shrink the log file */
         {
-          if (shrink_log (log_file_name, &lp, log_size) != 0)
+          if (shrink_log (log_file_name, & lp, log_size) != 0)
             set_result (2); /* on failure the original log is kept */
         }
 
@@ -635,15 +663,17 @@ main (int argc, char *argv[])
 
       /* Write the up-to-date header (lp is already in host byte order). */
       (void)fseek (fout, 0, 0);
-      to_big_endian (&lp);
-      (void)fwrite (&lp, sizeof (struct bl_head), 1, fout);
-      to_big_endian (&lp);
+      to_big_endian (& lp);
+      (void)fwrite (& lp, sizeof (struct bl_head), 1, fout);
+      to_big_endian (& lp);
     }
 
-  /* 1. Ignore the kill signal while reading/writing
+  /*
+   * 1. Ignore the kill signal while reading/writing
    * 2. Read from stdin and write to fcon and fout
    * 3. When we reach the end of the log (lp.size), go back to the top
-   *    and set the bottom pointer to the size of the log. */
+   *    and set the bottom pointer to the size of the log.
+   */
 
   /* ignore the kill signal because we're starting to write to the log */
   (void)signal (SIGINT, SIG_IGN);
@@ -658,8 +688,8 @@ main (int argc, char *argv[])
         { /* check to see if its time to start writing the top of log again. */
           if (lp.current < lp.size)
             {
-              (void)putc (inbuf[i], fout);
-              (void)putc (inbuf[i], fcon);
+              (void)putc (inbuf [i], fout);
+              (void)putc (inbuf [i], fcon);
               j++;
               lp.current++;
             }
@@ -667,8 +697,8 @@ main (int argc, char *argv[])
             { /* if we are logging to a file */
               (void)fseek (fout, lp.top, 0); /* position pointer to top */
               lp.current = lp.top;           /* position current to top */
-              (void)putc (inbuf[i], fout);
-              (void)putc (inbuf[i], fcon);
+              (void)putc (inbuf [i], fout);
+              (void)putc (inbuf [i], fcon);
               j++;
               lp.current++;
               lp.bottom = lp.size; /* set bottom to size (end of log) */
@@ -681,9 +711,9 @@ main (int argc, char *argv[])
 
   /* Update the header */
   (void)fseek (fout, 0, 0);
-  to_big_endian (&lp);
-  (void)fwrite (&lp, sizeof (struct bl_head), 1, fout);
-  to_big_endian (&lp);
+  to_big_endian (& lp);
+  (void)fwrite (& lp, sizeof (struct bl_head), 1, fout);
+  to_big_endian (& lp);
 
   /* All done let's sync & close */
   (void)fclose (fout);

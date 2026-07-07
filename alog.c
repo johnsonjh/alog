@@ -203,7 +203,7 @@ output_log (const char * log_file_name)
 static int
 round_log_size (int size)
 { /* round up to a whole multiple of the default log size */
-  return ((size / DEF_SIZE) + ((size % DEF_SIZE != 0) ? 1 : 0)) * DEF_SIZE;
+  return (((size / DEF_SIZE) + (((size % DEF_SIZE) != 0) ? 1 : 0)) * DEF_SIZE);
 }
 
 /*****************************************************************************/
@@ -489,18 +489,24 @@ main (int argc, char * argv [])
         }
     }
 
-  /* If there are syntax errors, put out syntax msg in the following cases: */
-  /* - the L_flag or o_flag flag is set */
+  /*
+   * If there are syntax errors, put out syntax msg in the following cases:
+   * - the L_flag or o_flag flag is set
+   */
 
-  /* Only put out the syntax message in these cases (and the cases already */
-  /* handled above) so that when alog is being used as a pipe, alog won't */
-  /* interupt the operation of the command that is calling it. */
+  /*
+   * Only put out the syntax message in these cases (and the cases already
+   * handled above) so that when alog is being used as a pipe, alog won't
+   * interupt the operation of the command that is calling it.
+   */
 
   if (result == 1)
     syntax (1);
 
-  /* VALIDATE - Make all fields have an appropriate value set values in */
-  /* case of failure to insure that alog always runs to completion. */
+  /*
+   * VALIDATE - Make all fields have an appropriate value set values in
+   * case of failure to insure that alog always runs to completion.
+   */
 
   fnull = "/dev/null"; /* set /dev/null filename var */
 
@@ -532,8 +538,11 @@ main (int argc, char * argv [])
 
   /* Setup file pointers */
 
-  /* If the quiet logging flag was specified ... */
-  /* try to open /dev/null to use as the "console" */
+  /*
+   * If the quiet logging flag was specified ...
+   * try to open /dev/null to use as the "console"
+   */
+
   if (q_flag)
     fcon = fopen (fnull, "a");
   else /* normal logging, so assign stdout to fcon, the "console" */
